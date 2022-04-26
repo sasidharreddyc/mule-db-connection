@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:db="http://www.mulesoft.org/schema/mule/db"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/db http://www.mulesoft.org/schema/mule/db/current/mule-db.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="e851cf5b-62b6-4229-9acb-19e9922ba89b" >
+		<http:listener-connection host="0.0.0.0" port="8087" />
+	</http:listener-config>
+	<db:config name="Database_Config" doc:name="Database Config" doc:id="5b5baa34-926c-42e9-bae4-72176be48f78" >
+		<db:my-sql-connection host="127.0.0.1" port="3306" user="root" password="Sasi1982" />
+	</db:config>
+	<flow name="db-connectionFlow" doc:id="4ec84648-5305-4974-bb9a-41e3676fc167" >
+		<file:listener doc:name="On New or Updated File" doc:id="b4763e6b-7260-4146-af4c-28fa48e5aec6" directory="C:\\Sasi\\MuleData\\Input" moveToDirectory="C:\\Sasi\\MuleData\\Output">
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</file:listener>
+		<ee:transform doc:name="Transform Message" doc:id="f449c2c0-cb29-43aa-8e84-242626cea33b" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+payload map {
+	id : $.id,
+	first_name : $.first_name,
+	last_name : $.last_name
+
+	
+}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="3c80eee4-65e4-4074-885b-fcb019e253cc" message="Processing file at #[ now()]"/>
+		<foreach doc:name="For Each" doc:id="fc30f63b-5bb3-4450-a9ee-69aac26be557" >
+			<logger level="INFO" doc:name="Logger" doc:id="11a3620c-6b2f-42a4-b848-743707c2a295" message="Inserting at row #[vars.counter]"/>
+			<db:insert doc:name="Insert" doc:id="ee0f7456-6484-42d0-9d59-04fa502901a0" config-ref="Database_Config">
+			<db:sql><![CDATA[insert into hb_student_tracker.employee VALUES (:id,:first_name,:last_name,:email)]]></db:sql>
+			<db:input-parameters><![CDATA[#[{
+	id : payload.id default 0,
+	first_name : payload.first_name default "",
+	last_name : payload.last_name,
+	email : "test@email.com"
+	
+}]]]></db:input-parameters>
+		</db:insert>
+		</foreach>
+	</flow>
+</mule>
